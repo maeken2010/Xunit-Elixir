@@ -55,11 +55,11 @@ defmodule Mix.Tasks.XunitTest do
   use Mix.Task
 
   def run(_) do
-    test = Xunit.WasRun.new(&TestCaseTest.was_run_test/0)
-    Xunit.WasRun.run(test)
+    Xunit.WasRun.new(&TestCaseTest.was_run_test/0)
+    |> Xunit.WasRun.run()
 
-    test = Xunit.WasRun.new(&TestCaseTest.set_up_test/0)
-    Xunit.WasRun.run(test)
+    Xunit.WasRun.new(&TestCaseTest.set_up_test/0)
+    |> Xunit.WasRun.run()
   end
 end
 
