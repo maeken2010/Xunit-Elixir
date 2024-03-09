@@ -16,6 +16,7 @@ defmodule TestCaseTest do
     alias Xunit.WasRun
 
     test = WasRun.new(&Xunit.WasRun.test_method/0)
+    test = WasRun.set_up(test)
     test = WasRun.run(test)
     unless test.was_set_up, do: raise "error"
 
