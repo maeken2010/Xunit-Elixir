@@ -1,8 +1,8 @@
 defmodule TestCaseTest do
-  def main() do
+  def was_run_test() do
     alias Xunit.WasRun
 
-    test = WasRun.new("Xunit.WasRun.test_method")
+    test = WasRun.new(&Xunit.WasRun.test_method/0)
     if test.was_run, do: raise "error"
 
     test = WasRun.run(test)
@@ -13,21 +13,30 @@ defmodule TestCaseTest do
   end
 end
 
-defmodule Xunit.WasRun do
-  defstruct name: "", was_run: false
+defmodule Xunit.TestCase do
+  defstruct test_func: nil
 
-  def new(method_name) do
-    struct!(Xunit.WasRun, %{ name: method_name }) 
+  def run(%{test_func: func} = test_case) do
+    func.()
+    test_case
+  end
+end
+
+defmodule Xunit.WasRun do
+  defstruct test_case: nil, was_run: false
+
+  def new(func) do
+    test_case = struct!(Xunit.TestCase, %{ test_func: func })
+    struct!(Xunit.WasRun, %{ test_case: test_case }) 
   end
 
-  def run(test) do
-    method_name = test.name
-    { result, _ } = method_name |> Code.eval_string
-    result
+  def run(%{test_case: test_case} = was_run) do
+    Xunit.TestCase.run(test_case)
+    struct!(was_run, was_run: true)
   end
 
   def test_method() do
-    struct!(Xunit.WasRun, %{ was_run: true })
+    IO.puts("Test!")
   end
 end
 
@@ -35,7 +44,8 @@ defmodule Mix.Tasks.XunitTest do
   use Mix.Task
 
   def run(_) do
-    TestCaseTest.main()
+    test = Xunit.WasRun.new(&TestCaseTest.was_run_test/0)
+    Xunit.WasRun.run(test)
   end
 end
 
