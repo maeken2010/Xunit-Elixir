@@ -1,5 +1,5 @@
 defmodule TestCaseTest do
-  def test_running() do
+  def main() do
     alias Xunit.WasRun
 
     test = WasRun.new("Xunit.WasRun.test_method")
@@ -7,16 +7,6 @@ defmodule TestCaseTest do
 
     test = WasRun.run(test)
     unless test.was_run, do: raise "error"
-
-    IO.puts("ok")
-    :ok
-  end
-  def test_set_up() do
-    alias Xunit.WasRun
-
-    test = WasRun.new("Xunit.WasRun.test_method")
-    test = WasRun.run(test)
-    unless test.was_set_up, do: raise "error"
 
     IO.puts("ok")
     :ok
@@ -45,8 +35,7 @@ defmodule Mix.Tasks.XunitTest do
   use Mix.Task
 
   def run(_) do
-    TestCaseTest.test_running()
-    TestCaseTest.test_set_up()
+    TestCaseTest.main()
   end
 end
 
