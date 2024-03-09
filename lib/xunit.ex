@@ -34,7 +34,7 @@ defmodule Xunit.TestCase do
 end
 
 defmodule Xunit.WasRun do
-  defstruct test_case: nil, was_run: false
+  defstruct test_case: nil, was_set_up: false, was_run: false
 
   def new(func) do
     test_case = struct!(Xunit.TestCase, %{ test_func: func })
@@ -43,7 +43,7 @@ defmodule Xunit.WasRun do
 
   def run(%{test_case: test_case} = was_run) do
     Xunit.TestCase.run(test_case)
-    struct!(was_run, was_run: true)
+    struct!(was_run, %{was_run: true, was_set_up: true})
   end
 
   def test_method() do
