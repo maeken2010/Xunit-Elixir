@@ -1,8 +1,10 @@
 defmodule TestCaseTest do
-  def was_run_test() do
-    alias Xunit.WasRun
+  alias Xunit.WasRun
 
-    test = WasRun.new(&Xunit.WasRun.test_method/0)
+  def was_run_test() do
+    test = WasRun.init()
+    |> WasRun.new([&Xunit.WasRun.test_method/0])
+
     if test.was_run, do: raise "error"
 
     test = WasRun.run(test)
@@ -13,11 +15,13 @@ defmodule TestCaseTest do
   end
 
   def set_up_test() do
-    alias Xunit.WasRun
+    setup_func = fn -> IO.puts("setup!") end
 
-    test = WasRun.new(&Xunit.WasRun.test_method/0)
-    test = WasRun.set_up(test)
-    test = WasRun.run(test)
+    test = WasRun.init()
+    |> WasRun.new([&Xunit.WasRun.test_method/0])
+    |> WasRun.set_up(setup_func)
+    |> WasRun.run()
+
     unless test.was_set_up, do: raise "error"
 
     IO.puts("ok")
@@ -26,28 +30,48 @@ defmodule TestCaseTest do
 end
 
 defmodule Xunit.TestCase do
-  defstruct test_func: nil
+  defstruct test_func: nil, setup_func: nil
 
-  def run(%{test_func: func} = test_case) do
+  def run(%{test_func: func, setup_func: nil} = test_case) do
+    func.()
+    test_case
+  end
+
+  def run(%{test_func: func, setup_func: setup} = test_case) do
+    setup.()
     func.()
     test_case
   end
 end
 
 defmodule Xunit.WasRun do
-  defstruct test_case: nil, was_set_up: false, was_run: false
+  defstruct test_case: [], was_set_up: false, was_run: false
 
-  def new(func) do
-    test_case = struct!(Xunit.TestCase, %{ test_func: func })
-    struct!(Xunit.WasRun, %{ test_case: test_case }) 
+  def init() do
+    %Xunit.WasRun{}
   end
 
-  def set_up(%{test_case: test_case} = was_run) do
-    struct!(was_run, %{was_set_up: true})
+  def new(was_run, func_list) do
+    test_case_list = Enum.map(
+      func_list,
+      fn(func) -> struct!(Xunit.TestCase, %{ test_func: func }) end
+    )
+    struct!(was_run, %{ test_case: test_case_list }) 
   end
 
-  def run(%{test_case: test_case} = was_run) do
-    Xunit.TestCase.run(test_case)
+  def set_up(%{test_case: test_case_list} = was_run, setup_func) do
+    new_test_case_list = Enum.map(
+      test_case_list,
+      fn(test_case) -> struct!(test_case, %{ setup_func: setup_func }) end
+    )
+    struct!(was_run, %{ was_set_up: true, test_case: new_test_case_list})
+  end
+
+  def run(%{test_case: test_case_list} = was_run) do
+    Enum.map(
+      test_case_list,
+      fn(test_case) -> Xunit.TestCase.run(test_case) end
+    )
     struct!(was_run, %{was_run: true})
   end
 
@@ -60,10 +84,12 @@ defmodule Mix.Tasks.XunitTest do
   use Mix.Task
 
   def run(_) do
-    Xunit.WasRun.new(&TestCaseTest.was_run_test/0)
+    Xunit.WasRun.init()
+    |> Xunit.WasRun.new([&TestCaseTest.was_run_test/0])
     |> Xunit.WasRun.run()
 
-    Xunit.WasRun.new(&TestCaseTest.set_up_test/0)
+    Xunit.WasRun.init()
+    |> Xunit.WasRun.new([&TestCaseTest.set_up_test/0])
     |> Xunit.WasRun.run()
   end
 end
