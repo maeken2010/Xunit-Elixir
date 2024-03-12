@@ -1,8 +1,8 @@
 defmodule TestCaseTest do
   alias Xunit.WasRun
 
-  def was_run_test() do
-    test = WasRun.init()
+  def was_run_test(context) do
+    test = context.test
     |> WasRun.new([&Xunit.WasRun.test_method/0])
 
     if test.was_run, do: raise "error"
@@ -14,10 +14,10 @@ defmodule TestCaseTest do
     :ok
   end
 
-  def set_up_test() do
+  def set_up_test(context) do
     setup_func = fn -> %{ hoge: "hi" } end
 
-    test = WasRun.init()
+    test = context.test
     |> WasRun.new([&Xunit.WasRun.setup_test_method/1])
     |> WasRun.set_up(setup_func)
     |> WasRun.run()
@@ -38,8 +38,8 @@ defmodule Xunit.TestCase do
   end
 
   def run(%{test_func: func, setup_func: setup} = test_case) do
-    setup.()
-    func.()
+    context = setup.()
+    func.(context)
     test_case
   end
 end
@@ -89,13 +89,17 @@ defmodule Mix.Tasks.XunitTest do
   use Mix.Task
 
   def run(_) do
+    test_list = [
+      &TestCaseTest.was_run_test/1,
+      &TestCaseTest.set_up_test/1
+    ]
     Xunit.WasRun.init()
-    |> Xunit.WasRun.new([&TestCaseTest.was_run_test/0])
+    |> Xunit.WasRun.new(test_list)
+    |> Xunit.WasRun.set_up(
+      fn -> %{test: Xunit.WasRun.init()} end
+    )
     |> Xunit.WasRun.run()
 
-    Xunit.WasRun.init()
-    |> Xunit.WasRun.new([&TestCaseTest.set_up_test/0])
-    |> Xunit.WasRun.run()
   end
 end
 
