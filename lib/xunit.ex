@@ -15,10 +15,10 @@ defmodule TestCaseTest do
   end
 
   def set_up_test() do
-    setup_func = fn -> IO.puts("setup!") end
+    setup_func = fn -> %{ hoge: "hi" } end
 
     test = WasRun.init()
-    |> WasRun.new([&Xunit.WasRun.test_method/0])
+    |> WasRun.new([&Xunit.WasRun.setup_test_method/1])
     |> WasRun.set_up(setup_func)
     |> WasRun.run()
 
@@ -78,6 +78,11 @@ defmodule Xunit.WasRun do
   def test_method() do
     IO.puts("Test!")
   end
+
+  def setup_test_method(context) do
+    unless context.hoge == "hi", do: raise "error"
+  end
+
 end
 
 defmodule Mix.Tasks.XunitTest do
